@@ -1,8 +1,8 @@
 package main
 
 import (
-	"context"
 	"log"
+	"mini-control-plane/watchers"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -27,25 +27,6 @@ func (s *KubeControllerManager) Run() {
 
 	log.Println("Connected to etcd successfully")
 
-	go s.MyResourceWatcher(cli)
-	s.PodWatcher(cli)
-}
-
-func (s *KubeControllerManager) PodWatcher(cli *clientv3.Client) {
-	watchChan := cli.Watch(context.Background(), "/pods/", clientv3.WithPrefix())
-	for wresp := range watchChan {
-		for _, ev := range wresp.Events {
-			log.Printf("Type: %s Key:%s Value:%s\n", ev.Type, ev.Kv.Key, ev.Kv.Value)
-		}
-	}
-}
-
-func (s *KubeControllerManager) MyResourceWatcher(cli *clientv3.Client) {
-	myResourcesChan := cli.Watch(context.Background(), "/myresources/", clientv3.WithPrefix())
-	for response := range myResourcesChan {
-		for _, ev := range response.Events {
-			log.Printf("Type: %s Key:%s Value:%s\n", ev.Type, ev.Kv.Key, ev.Kv.Value)
-			// Here you would add logic to reconcile the resource based on the change
-		}
-	}
+	watcher := watchers.NewDockerWatcher()
+	watcher.WatchDockerPaths(cli)
 }
